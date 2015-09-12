@@ -52,10 +52,7 @@ when TooBright is 1:
 
     ...
     #define USE_CURVES      	!TooBright
-    
-#define USE_CURVES        	1 	//[0 or 1] Curves : Contrast adjustments using S-curves.
-#define USE_SEPIA         	0 	//[0 or 1] Sepia : Sepia tones the image.
-
+    ...
 
 Or you might simply wish to change its parameters in the "EFFECT PARAMETERS"
 section:
