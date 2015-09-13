@@ -29,6 +29,10 @@ using System.Threading;
 
 namespace GW2ReshadeMap {
     class Program {
+        public const short PollIntervalMs = 100;
+        /* Prevent ReShade from disregarding changes by sleeping this long after each change */
+        public const short WriteDelayMs   = 3000;
+
         static string oldContents = "";
 
         static void Main(string[] args) {
@@ -51,9 +55,10 @@ namespace GW2ReshadeMap {
                             context.mapId, (int)tod, tod);
                         File.WriteAllText(fileName, newContents);
                         oldContents = newContents;
+                        Thread.Sleep(WriteDelayMs);
                     }
 
-                    Thread.Sleep(100);
+                    Thread.Sleep(PollIntervalMs);
                 }
             }
         }
