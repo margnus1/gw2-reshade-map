@@ -19,31 +19,29 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Threading;
 
 namespace GW2ReshadeMap {
     class Program {
-        const string MumbleLinkFile = "MumbleLink";
-        static readonly int LinkedMemSize = Marshal.SizeOf(typeof(LinkedMem));
-
         static string oldContents = "";
 
         static void Main(string[] args) {
             string fileName = "gw2map.h";
-            if (args.Length>0) fileName = args[0];
+            if (args.Length > 0) fileName = args[0];
             Console.WriteLine("Maintaining {0} with map data from Guild Wars 2 "
                               + "using the Mumble Link API", fileName);
 
-            using (var f = MemoryMappedFile.CreateOrOpen("MumbleLink", LinkedMemSize)) {
-                MemoryMappedViewAccessor view = f.CreateViewAccessor();
-
+            using (var ml = MumbleLink.Open()) {
                 while (true) {
-                    LinkedMem  state   = UnmarshalRead<LinkedMem>(view);
-                    GW2Context context = UnmarshalRead<GW2Context>(state.context);
+                    MumbleLink.LinkedMem  state;
+                    MumbleLink.GW2Context context;
+                    ml.Read(out state, out context);
 
                     string newContents = genContents(state, context);
                     if (newContents != oldContents) {
@@ -60,10 +58,33 @@ namespace GW2ReshadeMap {
             }
         }
 
-        private static string genContents(LinkedMem state, GW2Context context) {
+        private static string genContents(
+            MumbleLink.LinkedMem state, MumbleLink.GW2Context context) {
             return String.Format("#define GW2MapId {0}\n#define GW2TOD {1}\n",
                 context.mapId,
                 (int)DayNightCycle.Classify());
+        }
+    }
+
+    class MumbleLink : IDisposable {
+        const string MumbleLinkFile = "MumbleLink";
+        static readonly int LinkedMemSize = Marshal.SizeOf(typeof(LinkedMem));
+
+        MemoryMappedFile f;
+        MemoryMappedViewAccessor view;
+
+        private MumbleLink(MemoryMappedFile f) {
+            this.f = f;
+            this.view = f.CreateViewAccessor();
+        }
+
+        public static MumbleLink Open() {
+            return new MumbleLink(MemoryMappedFile.CreateOrOpen("MumbleLink", LinkedMemSize));
+        }
+
+        public void Read(out LinkedMem state, out GW2Context context) {
+            state   = UnmarshalRead<LinkedMem>(view);
+            context = UnmarshalRead<GW2Context>(state.context);
         }
 
         static T UnmarshalRead<T>(MemoryMappedViewAccessor view) where T : struct {
@@ -83,7 +104,7 @@ namespace GW2ReshadeMap {
 
         /* From https://github.com/arenanet/api-cdi/blob/master/mumble.md */
         [StructLayout(LayoutKind.Sequential)]
-        struct GW2Context {
+        public struct GW2Context {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst=28, ArraySubType=UnmanagedType.I1)]
             public byte[] serverAddress; // contains sockaddr_in or sockaddr_in6
             public uint mapId;
@@ -95,7 +116,7 @@ namespace GW2ReshadeMap {
 
         /* From http://wiki.mumble.info/wiki/Link */
         [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        struct LinkedMem {
+        public struct LinkedMem {
             UInt32 uiVersion;
             UInt32 uiTick;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
@@ -120,6 +141,10 @@ namespace GW2ReshadeMap {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst=2048)]
             public string description;
         };
+
+        public void Dispose() {
+            f.Dispose();
+        }
     }
 
     class DayNightCycle {
