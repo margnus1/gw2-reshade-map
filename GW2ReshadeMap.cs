@@ -42,23 +42,37 @@ namespace GW2ReshadeMap {
                               + "using the Mumble Link API", fileName);
 
             using (var ml = MumbleLink.Open()) {
-                while (true) {
-                    MumbleLink.LinkedMem  state;
-                    MumbleLink.GW2Context context;
-                    ml.Read(out state, out context);
+                try {
+                    while (true) {
+                        MumbleLink.LinkedMem state;
+                        MumbleLink.GW2Context context;
+                        ml.Read(out state, out context);
 
-                    string newContents = genContents(state, context);
-                    if (newContents != oldContents) {
-                        DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
+                        string newContents = genContents(state, context);
+                        if (newContents != oldContents) {
+                            File.WriteAllText(fileName, newContents);
 
-                        Console.WriteLine("Updated file: GW2MapId = {0}, GW2TOD = {1} ({2}).",
-                            context.mapId, (int)tod, tod);
-                        File.WriteAllText(fileName, newContents);
-                        oldContents = newContents;
-                        Thread.Sleep(WriteDelayMs);
+                            DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
+                            Console.WriteLine("Updated file: GW2MapId = {0}, GW2TOD = {1} ({2}).",
+                                context.mapId, (int)tod, tod);
+
+                            oldContents = newContents;
+                            Thread.Sleep(WriteDelayMs);
+                        }
+
+                        Thread.Sleep(PollIntervalMs);
                     }
-
-                    Thread.Sleep(PollIntervalMs);
+                } catch (UnauthorizedAccessException ex) {
+                    Console.WriteLine(ex.Message);
+                    if (!isAdministrator()) {
+                        try {
+                            elevate(args);
+                            return;
+                        } catch (Exception) { }
+                    }
+                    Console.WriteLine("\nPermission was denied. Press enter to exit.");
+                    Console.ReadLine();
+                    return;
                 }
             }
         }
@@ -68,6 +82,20 @@ namespace GW2ReshadeMap {
             return String.Format("#define GW2MapId {0}\n#define GW2TOD {1}\n",
                 context.mapId,
                 (int)DayNightCycle.Classify());
+        }
+
+        static void elevate(string[] args) {
+            // Restart program and run as admin
+            string exeName = Process.GetCurrentProcess().MainModule.FileName;
+            var startInfo = new ProcessStartInfo(exeName, String.Join(" ", args));
+            startInfo.Verb = "runas";
+            Process.Start(startInfo);
+        }
+
+        static bool isAdministrator() {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
     }
 
