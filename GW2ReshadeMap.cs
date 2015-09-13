@@ -105,7 +105,7 @@ namespace GW2ReshadeMap {
         /* From https://github.com/arenanet/api-cdi/blob/master/mumble.md */
         [StructLayout(LayoutKind.Sequential)]
         public struct GW2Context {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=28, ArraySubType=UnmanagedType.I1)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=28)]
             public byte[] serverAddress; // contains sockaddr_in or sockaddr_in6
             public uint mapId;
             public uint mapType;
@@ -119,24 +119,24 @@ namespace GW2ReshadeMap {
         public struct LinkedMem {
             UInt32 uiVersion;
             UInt32 uiTick;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fAvatarPosition;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fAvatarFront;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fAvatarTop;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst=256)]
             public string name;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fCameraPosition;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fCameraFront;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3, ArraySubType=UnmanagedType.R4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fCameraTop;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst=256)]
             public string identity;
             public UInt32 context_len;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=256, ArraySubType=UnmanagedType.I1)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst=256)]
             public byte[] context;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst=2048)]
             public string description;
