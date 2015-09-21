@@ -8,9 +8,15 @@ like this:
 
     #define GW2MapId 28
     #define GW2TOD 3
+    #define GW2Active 1
 
 `GW2TOD` is the time-of-day ingame (0-3 are Dawn, Day, Dusk, and Night), derived
 from your system clock.
+
+GW2Active is 0 if the game is not running, in the character select screen or a
+loading screen, and 1 otherwise. It will only turn to 0 after a delay
+(`ActivityTimeoutMs` in `GW2ReshadeMap.cs`), but might help prevent overbloomed
+login screens, for example.
 
 How to compile
 --------------

@@ -31,7 +31,7 @@ namespace GW2ReshadeMap {
     class Program {
         public const short PollIntervalMs = 100;
         /* Prevent ReShade from disregarding changes by sleeping this long after each change */
-        public const short WriteDelayMs   = 3000;
+        public const short WriteDelayMs   = 5000;
 
         static string oldContents = "";
 
@@ -53,8 +53,8 @@ namespace GW2ReshadeMap {
                             File.WriteAllText(fileName, newContents);
 
                             DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
-                            Console.WriteLine("Updated file: GW2MapId = {0}, GW2TOD = {1} ({2}).",
-                                context.mapId, (int)tod, tod);
+                            Console.WriteLine("Updated file: GW2MapId = {0}, GW2TOD = {1} ({2}), GW2Active = {3}.",
+                                context.mapId, (int)tod, tod, active ? 1 : 0);
 
                             oldContents = newContents;
                             Thread.Sleep(WriteDelayMs);
@@ -77,11 +77,27 @@ namespace GW2ReshadeMap {
             }
         }
 
+        const int ActivityTimeoutMs = 12000;
+        const int ActivityTimeoutTicks = (ActivityTimeoutMs + PollIntervalMs - 1) / PollIntervalMs;
+        static UInt32 lastUiTickValue = 0;
+        static int lastChangedTick = -ActivityTimeoutTicks; // Have it inactive from startup
+        static int currentTick = 0;
+
+        static bool active;
+
         private static string genContents(
             MumbleLink.LinkedMem state, MumbleLink.GW2Context context) {
-            return String.Format("#define GW2MapId {0}\n#define GW2TOD {1}\n",
+            currentTick++;
+            if (lastUiTickValue != state.uiTick) lastChangedTick = currentTick;
+            lastUiTickValue = state.uiTick;
+            active = currentTick - lastChangedTick < ActivityTimeoutTicks;
+
+            return String.Format("#define GW2MapId {0}\n"
+                                +"#define GW2TOD {1}\n"
+                                +"#define GW2Active {2}\n",
                 context.mapId,
-                (int)DayNightCycle.Classify());
+                (int)DayNightCycle.Classify(),
+                active ? 1 : 0);
         }
 
         static void elevate(string[] args) {
@@ -150,8 +166,8 @@ namespace GW2ReshadeMap {
         /* From http://wiki.mumble.info/wiki/Link */
         [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
         public struct LinkedMem {
-            UInt32 uiVersion;
-            UInt32 uiTick;
+            public UInt32 uiVersion;
+            public UInt32 uiTick;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
             public float[] fAvatarPosition;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst=3)]
