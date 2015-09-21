@@ -14,6 +14,12 @@ from your system clock.
 
 How to compile
 --------------
+Double-click `build.bat`. If the window instantly dissapears, that means
+everything went went well and you should have `GW2ReshadeMap.exe` in the same
+folder.
+
+Or from the command line:
+
     csc GW2ReshadeMap.cs
 
 How to use
