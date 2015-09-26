@@ -32,6 +32,15 @@ namespace GW2ReshadeMap {
         public const short PollIntervalMs = 100;
         /* Prevent ReShade from disregarding changes by sleeping this long after each change */
         public const short WriteDelayMs   = 5000;
+        /*
+         * Proclaim inactivity after this period without Mumble Link updates
+         *
+         * Things that stop Mumble Link updates:
+         *  * Loading screens
+         *  * Vistas (~22s long)
+         *  * Cutscenes (LA one is ~56s, f.ex.)
+         */
+        const int ActivityTimeoutMs       = 5 * 60 * 1000;
 
         static string oldContents = "";
 
@@ -77,7 +86,6 @@ namespace GW2ReshadeMap {
             }
         }
 
-        const int ActivityTimeoutMs = 12000;
         const int ActivityTimeoutTicks = (ActivityTimeoutMs + PollIntervalMs - 1) / PollIntervalMs;
         static UInt32 lastUiTickValue = 0;
         static int lastChangedTick = -ActivityTimeoutTicks; // Have it inactive from startup
