@@ -62,8 +62,10 @@ namespace GW2ReshadeMap {
                             File.WriteAllText(fileName, newContents);
 
                             DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
-                            Console.WriteLine("Updated file: GW2MapId = {0}, GW2TOD = {1} ({2}), GW2Active = {3}.",
-                                context.mapId, (int)tod, tod, active ? 1 : 0);
+                            Console.WriteLine("{0}: Updated file: GW2MapId = {1}, "
+                                +"GW2TOD = {2}, GW2Active = {3}.",
+                                DateTime.Now,
+                                context.mapId, (int)tod, active ? 1 : 0);
 
                             oldContents = newContents;
                             Thread.Sleep(WriteDelayMs);
