@@ -42,37 +42,32 @@ namespace GW2ReshadeMap {
          */
         const int ActivityTimeoutMs       = 5 * 60 * 1000;
 
+        static string fileName = "gw2map.h";
+        static string launch = null;
+        static string launchArgs = null;
+        static Process game = null;
         static string oldContents = "";
 
         static void Main(string[] args) {
-            string fileName = "gw2map.h";
-            if (args.Length > 0) fileName = args[0];
+            if (!ParseArgs(args)) {
+                PrintUsage();
+                return;
+            }
+            if (launch != null) {
+                try {
+                    Console.WriteLine("Launching \"{0}\" {1}", launch, launchArgs);
+                    game = Process.Start(launch, launchArgs);
+                } catch (Exception ex) {
+                    Console.Error.WriteLine("Launch failed: {0}", ex.Message);
+                    return;
+                }
+            }
             Console.WriteLine("Maintaining {0} with map data from Guild Wars 2 "
                               + "using the Mumble Link API", fileName);
 
             using (var ml = MumbleLink.Open()) {
                 try {
-                    while (true) {
-                        MumbleLink.LinkedMem state;
-                        MumbleLink.GW2Context context;
-                        ml.Read(out state, out context);
-
-                        string newContents = genContents(state, context);
-                        if (newContents != oldContents) {
-                            File.WriteAllText(fileName, newContents);
-
-                            DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
-                            Console.WriteLine("{0}: Updated file: GW2MapId = {1}, "
-                                +"GW2TOD = {2}, GW2Active = {3}.",
-                                DateTime.Now,
-                                context.mapId, (int)tod, active ? 1 : 0);
-
-                            oldContents = newContents;
-                            Thread.Sleep(WriteDelayMs);
-                        }
-
-                        Thread.Sleep(PollIntervalMs);
-                    }
+                    MainLoop(fileName, ml);
                 } catch (UnauthorizedAccessException ex) {
                     Console.WriteLine(ex.Message);
                     if (!isAdministrator()) {
@@ -88,7 +83,100 @@ namespace GW2ReshadeMap {
             }
         }
 
-        const int ActivityTimeoutTicks = (ActivityTimeoutMs + PollIntervalMs - 1) / PollIntervalMs;
+        private static void PrintUsage() {
+          Console.Error.WriteLine("Command-line usage:");
+            Console.Error.WriteLine("  {0} [/hide] [/launch [program]] [/launchargs {args}]"
+                + " [file]", System.AppDomain.CurrentDomain.FriendlyName);
+            Console.Error.WriteLine("    Maintain {file} with map data from Guild Wars 2."
+                + "{file} defaults to \"gw2map.h\".");
+            Console.Error.WriteLine("");
+            Console.Error.WriteLine("  /hide:");
+            Console.Error.WriteLine("    Hide console window");
+            Console.Error.WriteLine("  /launch [program]:");
+            Console.Error.WriteLine("    Start {program}, and run until it quits."
+                + " {program} defaults to \"..\\Gw2.exe\".");
+            Console.Error.WriteLine("  /launchargs {args}:");
+            Console.Error.WriteLine("    When launching a program with /launch,"
+                + " pass it {args} as arguments.");
+        }
+
+        private static bool ParseArgs(string[] args) {
+            for (int i = 0; i < args.Length; i++) {
+                if (args[i].StartsWith("/") || args[i].StartsWith("-")) {
+                    string option = args[i].TrimStart('/', '-');
+                    switch (option) {
+                        case "launch":
+                            if (i == args.Length - 1) launch = "..\\Gw2.exe";
+                            else launch = args[++i];
+                            break;
+                        case "launchargs":
+                            if (i == args.Length - 1) {
+                                Console.Error.WriteLine("Option launchargs needs an argument");
+                                return false;
+                            } else {
+                                launchArgs = args[++i];
+                            }
+                            break;
+                        case "hide":
+                            ShowWindow(GetConsoleWindow(), ShowWindowCommands.Hide);
+                            break;
+                        default:
+                            Console.Error.WriteLine("Unknown option {0}", args[i]);
+                            return false;
+                    }
+                } else {
+                    if (i != args.Length - 1) {
+                        Console.Error.WriteLine("Too many files given: {0}",
+                            String.Join(" ", args, i, args.Length - i));
+                        return false;
+                    }
+                    fileName = args[i];
+                }
+            }
+           return true;
+        }
+
+        enum ShowWindowCommands : int {
+            Hide = 0,
+        }
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        private static void MainLoop(string fileName, MumbleLink ml) {
+            while (!ShouldExit()) {
+                MumbleLink.LinkedMem state;
+                MumbleLink.GW2Context context;
+                ml.Read(out state, out context);
+
+                string newContents = genContents(state, context);
+                if (newContents != oldContents) {
+                    File.WriteAllText(fileName, newContents);
+
+                    DayNightCycle.TimeOfDay tod = DayNightCycle.Classify();
+                    Console.WriteLine("{0}: Updated file: GW2MapId = {1}, "
+                                +"GW2TOD = {2}, GW2Active = {3}.",
+                        DateTime.Now,
+                        context.mapId, (int)tod, active ? 1 : 0);
+
+                    oldContents = newContents;
+                    Thread.Sleep(WriteDelayMs);
+                }
+
+                Thread.Sleep(PollIntervalMs);
+            }
+        }
+
+        private static bool ShouldExit() {
+            if (game != null) {
+                if (game.HasExited) return true;
+            }
+            return false;
+        }
+
+        const int ActivityTimeoutTicks =
+            (ActivityTimeoutMs + PollIntervalMs - 1) / PollIntervalMs;
         static UInt32 lastUiTickValue = 0;
         static int lastChangedTick = -ActivityTimeoutTicks; // Have it inactive from startup
         static int currentTick = 0;
@@ -212,7 +300,8 @@ namespace GW2ReshadeMap {
         const double duration = 120 * 60; /* and lasts for two hours */
 
         public static double Time() {
-            return ((DateTime.UtcNow.TimeOfDay.TotalSeconds - origin + duration) / duration) % 1;
+            return ((DateTime.UtcNow.TimeOfDay.TotalSeconds - origin + duration)
+                    / duration) % 1;
         }
 
         public static TimeOfDay Classify() {
