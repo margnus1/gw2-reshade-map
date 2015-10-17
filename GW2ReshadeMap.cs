@@ -42,10 +42,12 @@ namespace GW2ReshadeMap {
          */
         const int ActivityTimeoutMs       = 5 * 60 * 1000;
 
-        static string fileName = "gw2map.h";
-        static string launch = null;
-        static string launchArgs = null;
+        static string  fileName = "gw2map.h";
+        static string  launch = null;
+        static string  launchArgs = null;
+        static bool    hide = false;
         static Process game = null;
+
         static string oldContents = "";
 
         static void Main(string[] args) {
@@ -58,17 +60,21 @@ namespace GW2ReshadeMap {
                     Console.WriteLine("Launching \"{0}\" {1}", launch, launchArgs);
                     game = Process.Start(launch, launchArgs);
                 } catch (Exception ex) {
-                    Console.Error.WriteLine("Launch failed: {0}", ex.Message);
+                    Console.Error.WriteLine(ex.Message);
+                    Console.Error.WriteLine("\nLaunch failed. Press enter to exit.");
+                    Console.ReadLine();
                     return;
                 }
             }
             Console.WriteLine("Maintaining {0} with map data from Guild Wars 2 "
                               + "using the Mumble Link API", fileName);
+            if (hide) ShowWindow(GetConsoleWindow(), ShowWindowCommands.Hide);
 
             using (var ml = MumbleLink.Open()) {
                 try {
                     MainLoop(fileName, ml);
                 } catch (UnauthorizedAccessException ex) {
+                    if (hide) ShowWindow(GetConsoleWindow(), ShowWindowCommands.Normal);
                     Console.WriteLine(ex.Message);
                     if (!isAdministrator()) {
                         try {
@@ -118,7 +124,7 @@ namespace GW2ReshadeMap {
                             }
                             break;
                         case "hide":
-                            ShowWindow(GetConsoleWindow(), ShowWindowCommands.Hide);
+                            hide = true;
                             break;
                         default:
                             Console.Error.WriteLine("Unknown option {0}", args[i]);
@@ -138,6 +144,7 @@ namespace GW2ReshadeMap {
 
         enum ShowWindowCommands : int {
             Hide = 0,
+            Normal = 1,
         }
         [DllImport("user32.dll")]
         static extern bool ShowWindow(IntPtr hWnd, ShowWindowCommands nCmdShow);
