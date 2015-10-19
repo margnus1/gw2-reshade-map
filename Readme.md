@@ -40,6 +40,15 @@ In your Reshade preset, simply include the file:
 
     #include "gw2map.h"
 
+###I want to start GW2ReshadeMap automatically
+
+Change your Guild Wars 2 shortcut to point to `GW2ReshadeMap.exe`, and add
+`/launch ..\Gw2.exe` to the program arguments (adjust the path `..\Gw2.exe` as
+appropriate if you are not keeping `GW2ReshadeMap.exe` in the `bin` folder, it
+should lead to `Gw2.exe`). If you already have arguments for `Gw2.exe`, replace
+them with <code>/launchargs "<i>your old arguments here</i>"</code>, don't omit
+the quotes ("").
+
 ###Example
 
 For example, say that you are using MasterEffect and would like to turn off the
