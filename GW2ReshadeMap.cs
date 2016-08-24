@@ -199,10 +199,13 @@ namespace GW2ReshadeMap {
 
             return String.Format("#define GW2MapId {0}\n"
                                 +"#define GW2TOD {1}\n"
-                                +"#define GW2Active {2}\n",
+                                +"#define GW2Active {2}\n"
+                                +"#define TimeZone {3}\n",
                 context.mapId,
                 (int)DayNightCycle.Classify(),
-                active ? 1 : 0);
+                active ? 1 : 0,
+                (int)TimeZone.CurrentTimeZone.GetUtcOffset(
+                    DateTime.Now).TotalSeconds);
         }
 
         static void elevate(string[] args) {

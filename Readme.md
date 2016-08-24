@@ -9,6 +9,7 @@ like this:
     #define GW2MapId 28
     #define GW2TOD 3
     #define GW2Active 1
+    #define TimeZone 3600
 
 `GW2TOD` is the time-of-day ingame (0-3 are Dawn, Day, Dusk, and Night), derived
 from your system clock.
@@ -17,6 +18,16 @@ GW2Active is 0 if the game is not running, in the character select screen or a
 loading screen, and 1 otherwise. It will only turn to 0 after a delay
 (`ActivityTimeoutMs` in `GW2ReshadeMap.cs`), but might help prevent overbloomed
 login screens, for example.
+
+`TimeZone` is your time zone and daylight savings time in seconds of offset from
+UTC. It is useful to make presets that change smoothly with in-game time, as
+opposed to presets that use `GW2TOD` above, which change suddenly and cause
+short game freezes as the change happens. Because of this, use of a macro like
+`GW2DayNight` is heavily recommended in favour of using `GW2TOD`. See the
+[GW2DayNight](https://gist.github.com/margnus1/901ebb2a7f5f25ebeb393334b1500f04)
+macro, used in my simple
+[Subtle Days, Immersive Nights](https://gist.github.com/margnus1/9055fadc0692219099bc)
+MasterEffect preset for an example.
 
 How to compile
 --------------
